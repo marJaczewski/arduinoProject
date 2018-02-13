@@ -1,0 +1,177 @@
+
+ #include <Wire.h>   // standardowa biblioteka Arduino
+#include <LiquidCrystal_I2C.h> // dolaczenie pobranej biblioteki I2C dla LCD
+//#define licznikWlaczony 12
+#define trybPracy 13
+#define kasujLicznik 12
+#define sieczkarniaZalaczona 11
+#define trigPin 10
+#define echoPin 9
+#define napedyZalaczone 8
+#define headerOpuszczony 7
+#define obrotyUstawione 6
+#define slomaSpietrzona 5
+#define walekSprzeglowy 4
+#define wentylator 3
+#define podajnikKlosowy 2
+#define podrzutnik 1
+#define sieczkarnia 0
+
+LiquidCrystal_I2C lcd(0x27, 2, 1, 0, 4, 5, 6, 7, 3, POSITIVE);  // Ustawienie adresu ukladu na 0x27
+
+ int diodaPin = 13;               // przypisujemy numer pinu do zmiennej diodaPin
+ float predkoscObrotowa;
+ int indukcyjny1=0;
+long startCzas= millis();
+//float licznik=0;
+bool temp;
+int interwal=1000;
+float areal=0;
+
+                   int maxi=0;
+void setup() {
+
+   pinMode(trigPin, OUTPUT); //Pin, do którego pod³¹czymy trig jako wyjœcie
+  pinMode(echoPin, INPUT); //a echo, jako wejœcie
+
+    lcd.begin(16,4);   // Inicjalizacja LCD 2x16
+    lcd.backlight(); // zalaczenie podwietlenia 
+    lcd.setCursor(0,0); // Ustawienie kursora w pozycji 0,0 (pierwszy wiersz, pierwsza kolumna)
+
+
+  Serial.begin(9600);
+  pinMode(diodaPin, OUTPUT);     // podstawiamy zmienn¹ diodaPin zamiast numeru pinu
+  pinMode(sieczkarnia, INPUT_PULLUP);
+  pinMode(podrzutnik, INPUT_PULLUP);   
+  pinMode(podajnikKlosowy, INPUT_PULLUP);
+  pinMode(wentylator, INPUT_PULLUP);
+  pinMode(walekSprzeglowy, INPUT_PULLUP); 
+  pinMode(slomaSpietrzona, INPUT_PULLUP);
+  pinMode(obrotyUstawione, INPUT_PULLUP);
+  pinMode(headerOpuszczony, INPUT_PULLUP);
+  pinMode(napedyZalaczone, INPUT_PULLUP);
+  pinMode(sieczkarniaZalaczona, INPUT_PULLUP);
+//  pinMode(licznikWlaczony, INPUT_PULLUP);
+  pinMode(trybPracy, INPUT_PULLUP);//czy kontroler wlaczony
+}
+
+
+void loop() {  
+
+if(digitalRead(trybPracy)==LOW){
+                lcd.setCursor(0,0); // Ustawienie kursora w pozycji 0,0 (pierwszy wiersz, pierwsza kolumna)
+                lcd.print("System wlaczony");
+                
+              
+                lcd.setCursor(0,1);
+                lcd.print("Wytrzasacz");
+                lcd.setCursor(11,1);
+                lcd.print(pomiarPredkosci(podrzutnik, 1000));
+              
+                
+              if(digitalRead(sieczkarniaZalaczona)==LOW){
+                        lcd.setCursor(0,2);
+                        lcd.print("Sieczkar");
+                        lcd.setCursor(10,2);
+                        lcd.print(pomiarPredkosci(sieczkarnia, 1000));}
+                            
+               else{
+                        lcd.setCursor(0,2);
+                        lcd.print("Sieczkar");
+                        lcd.setCursor(10,2);
+                        lcd.print("OFF");} 
+                        
+            //pommiar obrotów ko³a
+            lcd.setCursor(0,3);
+            lcd.print("Predkosc");
+           int predkosc= pomiarPredkosci(walekSprzeglowy,1000);//razy przelozenie 
+            lcd.print(predkosc);            
+              areal+=predkosc *2*3.14*3.6 ;        
+                        lcd.clear();
+            lcd.setCursor(0,2);
+            lcd.print("Ary:");
+            lcd.print(areal);             
+                        
+                        
+            lcd.setCursor(0,3);
+            lcd.print("Wialnia");
+            lcd.print(pomiarPredkosci(wentylator,1000));              
+                        
+                        
+                        
+                        }            
+                            
+else {
+   lcd.setCursor(0,0); // Ustawienie kursora w pozycji 0,0 (pierwszy wiersz, pierwsza kolumna)
+  lcd.print("System wylaczony");
+  }
+
+
+ //lcd.clear();
+}
+
+ 
+  
+  
+int pomiarPredkosci(int czujnik, int interwal){
+  int licznik=0;
+    startCzas= millis();
+  while(millis()-startCzas<interwal)
+            {
+                        
+                        if(digitalRead(czujnik)==HIGH&&temp==false){
+                            temp=true;             
+                           digitalWrite(diodaPin, HIGH);
+                           //Serial.print(licznik); 
+                          // Serial.print("\n");
+                          // Serial.print(startCzas);
+                             licznik++;
+                           
+                        }   
+                         else if(digitalRead(czujnik)==LOW&&temp==true){
+                          temp=false;
+                          digitalWrite(diodaPin, LOW);
+                           
+                             }
+            }   
+
+
+                 
+             predkoscObrotowa=licznik*interwal/1000;
+      //  Serial.print("\n Czestotliwosc impulsow \n");
+      //  Serial.print(predkoscObrotowa); 
+        licznik=0;   
+
+
+ // lcd.setCursor(0,0); // Ustawienie kursora w pozycji 0,0 (pierwszy wiersz, pierwsza kolumna)
+ // lcd.print("Szybkosc impulsow");
+ // lcd.setCursor(0,1); // Ustawienie kursora w pozycji 0,0 (pierwszy wiersz, pierwsza kolumna)
+ // lcd.print(predkoscObrotowa);
+      return predkoscObrotowa;       
+  }
+/*
+  void odleglosc() {
+  long czas;
+ long dystans;
+  digitalWrite(trigPin, LOW);
+  delayMicroseconds(2);
+  digitalWrite(trigPin, HIGH);
+  delayMicroseconds(10);
+  digitalWrite(trigPin, LOW);
+ 
+  czas = pulseIn(echoPin, HIGH);
+  Serial.print(czas);
+  Serial.print("\n");
+
+   lcd.setCursor(0,2); // Ustawienie kursora w pozycji 0,0 (pierwszy wiersz, pierwsza kolumna)
+  lcd.print("Odleglosc:");
+  lcd.setCursor(1,3); // Ustawienie kursora w pozycji 0,0 (pierwszy wiersz, pierwsza kolumna)
+  dystans=czas/58;
+  lcd.print(dystans);
+  //lcd.setCursor(4,3); // Ustawienie kursora w pozycji 0,0 (pierwszy wiersz, pierwsza kolumna)
+ 
+  Serial.print("\n Odleglosc \n");
+        Serial.print(dystans); 
+ 
+}
+*/
